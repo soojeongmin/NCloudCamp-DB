@@ -77,6 +77,7 @@ SELECT ENO, ENAME, SAL
 	FROM EMP
 	WHERE SAL >= 3000;
 
+-- FROM, JOIN 절에서 사용
 SELECT E.ENO
 	 , E.ENAME
 	 , E.SAL
@@ -93,13 +94,12 @@ SELECT E.ENO
 	 , E.ENAME
 	 , E.SAL
 	FROM EMP E
-	WHERE E.SAL IN (
-		SELECT SAL
-			FROM EMP
-			WHERE SAL >= 3000
-	); 
-	 
-	 
+	WHERE E.ENO IN (
+					  SELECT ENO
+						  FROM EMP
+						  WHERE SAL >= 3000
+				   );
+
 -- 1-3. 다중열 서브쿼리
 -- 서브쿼리의 결과가 다중행이면서 다중열인 서브쿼리
 -- FROM, JOIN 절에서만 사용가능
@@ -112,10 +112,10 @@ SELECT C.CNO
 	 , SC.RESULT
 	FROM COURSE C
 	JOIN SCORE SC
-	ON C.CNO = SC.CNO
+	  ON C.CNO = SC.CNO
 	JOIN PROFESSOR P
-	ON C.PNO = P.PNO;
-
+	  ON C.PNO = P.PNO;
+	 
 SELECT A.CNO
 	 , A.CNAME
 	 , A.PNO
@@ -128,43 +128,61 @@ SELECT A.CNO
 			 , P.PNAME
 			FROM COURSE C
 			JOIN PROFESSOR P
-			ON C.PNO = P.PNO
-		) A
-		JOIN SCORE SC 
-		ON A.CNO = SC.CNO;
-	
+			  ON C.PNO = P.PNO
+	) A
+	JOIN SCORE SC
+	  ON A.CNO = SC.CNO;
+
+-- 서브쿼리는 그룹함수와 주로 사용된다.
 SELECT ST.SNO
-	 , ST.SNAME
+	 , ST.SNAME 
 	 , AVG(SC.RESULT)
 	FROM STUDENT ST
 	JOIN SCORE SC
-	ON SC.SNO = ST.SNO
+	  ON SC.SNO = ST.SNO
 	GROUP BY ST.SNO, ST.SNAME;
 	 
-	 
--- 학생번호, 학생이름, 과목번호, 과목이름, 기말고사성적, 기말고사 성적 등급, 담당 교수번호, 담당 교수이름 조회하는데
+-- 학생번호, 학생이름, 과목번호, 과목이름, 기말고사 성적, 기말고사 성적 등급, 담당 교수번호, 담당 교수이름 조회하는 데
 -- STUDENT, SCORE, SCGRADE 테이블의 내용을 서브쿼리1
--- COURSE, PROFESSOR 테이블의 내용을 서브쿼리2
-
+SELECT ST.SNO
+	 , ST.SNAME
+	 , SC.CNO
+	 , SC.RESULT
+	 , GR.GRADE
+	FROM STUDENT ST
+	JOIN SCORE SC
+	  ON ST.SNO = SC.SNO 
+	JOIN SCGRADE GR
+	  ON SC."RESULT" BETWEEN GR.LOSCORE AND GR.HISCORE;
+	 
+-- COURSE, PROFESSOR 테이블의 내용을 서브쿼리2 
+SELECT C.CNO
+	 , C.CNAME
+	 , P.PNO
+	 , P.PNAME
+	FROM COURSE C
+	JOIN PROFESSOR P
+	  ON C.PNO = P.PNO;
+	 
 SELECT A.SNO
 	 , A.SNAME
-	 , B.CNO
-	 , B.CNAME
 	 , A.RESULT
 	 , A.GRADE
+	 , B.CNO
+	 , B.CNAME
 	 , B.PNO
 	 , B.PNAME
 	FROM (
 		SELECT ST.SNO
 			 , ST.SNAME
+			 , SC.CNO
 			 , SC.RESULT
 			 , GR.GRADE
-			 , SC.CNO
 			FROM STUDENT ST
 			JOIN SCORE SC
-			ON ST.SNO = SC.SNO
+			  ON ST.SNO = SC.SNO 
 			JOIN SCGRADE GR
-		  	ON SC.RESULT BETWEEN GR.LOSCORE AND GR.HISCORE
+			  ON SC."RESULT" BETWEEN GR.LOSCORE AND GR.HISCORE
 	) A
 	JOIN (
 		SELECT C.CNO
@@ -173,23 +191,21 @@ SELECT A.SNO
 			 , P.PNAME
 			FROM COURSE C
 			JOIN PROFESSOR P
-			ON C.PNO = P.PNO
-	
+			  ON C.PNO = P.PNO
 	) B
 	ON A.CNO = B.CNO;
-	
+					 
 
-----------------------------------------------------
 -- 2. 집합연산자
 -- 집합연산자는 서로 다른 두 쿼리의 결과를 합집합, 차집합, 교집합 해주는 연산자
--- 2-1. 합집합 연잔자 (UNION, UNION ALL)
+-- 2-1. 합집합 연산자(UNION, UNION ALL)
 -- 2000년 이후에 부임된 교수의 교수번호, 교수이름, 부임일자와 2000년 이후에 채용된 사원의 사원번호, 사원이름, 채용일자를 조회
--- 첫번째 쿼리에서 컬럼의 개수, 데이터 타입이 결정되기 때문에 두 번째 쿼리는 첫번째 쿼리의 컬럼의 개수, 데이터타입을 따라야함.
+-- 첫 번째 쿼리에서 컬럼의 개수, 데이터 타입이 결정되기 때문에 두 번째 쿼리는 첫 번째 쿼리의 컬럼의 개수, 데이터 타입을 따라야한다.
 SELECT PNO
 	 , PNAME
 	 , HIREDATE
 	FROM PROFESSOR
-	WHERE HIREDATE >= TO_DATE('2000', 'YYYY');
+	WHERE HIREDATE >= TO_DATE('2000', 'YYYY')
 UNION
 SELECT ENO
 	 , ENAME
@@ -198,7 +214,26 @@ SELECT ENO
 	WHERE HDATE >= TO_DATE('2000', 'YYYY');
 
 -- UNION은 중복을 제거해서 합집합 연산을 해준다.
--- 평점이 3.0 이상인 학생의 학생번호, 학생이름, 학년, 평점과 학년이 3학년인 학생의 학생번호, 학생이름, 학년, 평점 조회
+-- 평점이 3.0이상인 학생의 학생번호, 학생이름, 학년, 평점과 학년이 3학년인 학생의 학생번호, 학생이름, 학년, 평점을 함께 조회
+-- 중복제거
+SELECT SNO
+	 , SNAME
+	 , SYEAR
+	 , AVR
+	FROM STUDENT
+	WHERE AVR >= 3.0
+UNION 
+SELECT SNO
+	 , SNAME 
+	 , SYEAR 
+	 , AVR 
+	FROM STUDENT
+	WHERE SYEAR = 3
+	ORDER BY SNO;
+
+-- UNION ALL은 중복된 데이터도 함께 가져온다.
+-- 평점이 3.0이상인 학생의 학생번호, 학생이름, 학년, 평점과 학년이 3학년인 학생의 학생번호, 학생이름, 학년, 평점을 함께 조회
+-- 중복제거 없음
 SELECT SNO
 	 , SNAME
 	 , SYEAR
@@ -207,14 +242,15 @@ SELECT SNO
 	WHERE AVR >= 3.0
 UNION ALL
 SELECT SNO
-	 , SNAME
-	 , SYEAR
-	 , AVR
+	 , SNAME 
+	 , SYEAR 
+	 , AVR 
 	FROM STUDENT
-	WHERE SYEAR = 3;
+	WHERE SYEAR = 3
+	ORDER BY SNO;
 
 -- 2-2. 차집합 연산자(MINUS)
--- 첫번째 쿼리에서 두 번째 쿼리와 공통된 데이터를 제외한 결과를 조회한다.
+-- 첫 번째 쿼리에서 두 번째 쿼리와 공통된 데이터를 제외한 결과를 조회한다.
 INSERT INTO EMP VALUES('9998', '제갈궁', '지원', NULL, SYSDATE, 3200, 320, NULL);
 COMMIT;
 
@@ -224,15 +260,15 @@ SELECT ENO
 	 , JOB
 	FROM EMP
 	WHERE ENAME LIKE '제갈%'
-	AND JOB != '지원';
-
+	  AND JOB != '지원';
+	 
 SELECT ENO
 	 , ENAME
 	 , JOB
-	FROM EMP
+	FROM EMP 
 	WHERE ENAME LIKE '제갈%'
 MINUS 
-SELECT ENO 
+SELECT ENO
 	 , ENAME 
 	 , JOB 
 	FROM EMP
@@ -242,6 +278,7 @@ SELECT ENO
 SELECT CNO
 	 , CNAME
 	FROM COURSE
+	WHERE 1=1
 MINUS
 SELECT CNO
 	 , CNAME
@@ -249,8 +286,8 @@ SELECT CNO
 	WHERE PNO IS NOT NULL;
 
 -- 2-3. 교집합 연산자(INTERSECT)
--- 첫번째 쿼리의 결과에서 두번째 쿼리의 공통도니 결과만 조회
--- 교집합 연산자를 사용해서 물리, 화학과 학생중 평점이 3.0 이상인 학생의 학생번호, 학생이름, 전공, 평점 조회
+-- 첫 번째 쿼리의 결과에서 두 번째 쿼리의 공통된 결과만 조회
+-- 교집합 연산자를 사용해서 물리, 화학과 학생중 평점이 3.0이상인 학생의 학생번호, 학생이름, 전공, 평점 조회
 SELECT SNO
 	 , SNAME
 	 , MAJOR
@@ -258,10 +295,17 @@ SELECT SNO
 	FROM STUDENT
 	WHERE MAJOR IN ('물리', '화학')
 INTERSECT
-SELECT SNO 
+SELECT SNO
 	 , SNAME 
-	 , MAJOR
+	 , MAJOR 
 	 , AVR 
 	FROM STUDENT
 	WHERE AVR >= 3.0;
 
+SELECT SNO
+	 , SNAME
+	 , MAJOR
+	 , AVR
+	FROM STUDENT
+	WHERE MAJOR IN ('물리', '화학')
+	  AND AVR >= 3.0;
