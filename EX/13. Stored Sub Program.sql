@@ -37,6 +37,16 @@ AS SELECT SC.CNO
          
 SELECT * 
     FROM T_ST_SC1;
+    
+DELETE 
+    FROM T_ST_SC1;
+COMMIT;
+    
+SELECT SNO
+     , SNAME
+     , ROUND(AVG(RESULT), 2)
+    FROM T_ST_SC1
+    GROUP BY SNO, SNAME;
 
 -- 학생별 기말고사 성적의 평균을 저장하는 테이블
 CREATE TABLE T_ST_AVG_RES1(
@@ -47,8 +57,33 @@ CREATE TABLE T_ST_AVG_RES1(
 
 -- T_ST_SC1 테이블의 데이터를 참조해서 T_ST_AVG_RES1테이블에 데이터를 저장하느
 -- 프로시저 P_ST_AVG_RES를 생성하세요.(커서사용)
+CREATE OR REPLACE PROCEDURE P_ST_AVG_RES
+IS
+    CURSOR CUR_ST_AVG_RES IS
+        SELECT SNO
+             , SNAME
+             , ROUND(AVG(RESULT), 2)
+            FROM T_ST_SC1
+            GROUP BY SNO, SNAME;
+BEGIN
+    DELETE FROM T_ST_AVG_RES1;
+    FOR ST_AVG_RES_ROW IN CUR_ST_AVG_RES LOOP
+        INSERT INTO T_ST_AVG_RES1
+        VALUES ST_AVG_RES_ROW;
+        COMMIT;
+    END LOOP;
+END;
+/
 
+EXEC P_ST_AVG_RES;
 
-
-
+SELECT *
+    FROM T_ST_AVG_RES1;
     
+INSERT INTO T_ST_SC1
+VALUES ('1211', '999999', '고기천', 100);
+INSERT INTO T_ST_SC1
+VALUES ('1213', '999999', '고기천', 30);
+INSERT INTO T_ST_SC1
+VALUES ('1214', '999999', '고기천', 70);
+COMMIT;
